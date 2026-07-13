@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 电影随机选择器</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f0f2f5;
+    color: #333;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .header {
+    text-align: center;
+    padding: 30px 0 20px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .input-section textarea {
+    width: 100%;
+    min-height: 120px;
+    border: 2px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 14px;
+    font-size: 15px;
+    line-height: 1.8;
+    resize: vertical;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .input-section textarea:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+  .input-section textarea::placeholder {
+    color: #bbb;
+  }
+
+  .btn-random {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 14px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn-random:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(102,126,234,0.4);
+  }
+  .btn-random:active {
+    transform: translateY(0);
+  }
+
+  .result-card { display: none; }
+  .result-card.visible { display: block; }
+
+  .result-header {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .poster {
+    width: 120px;
+    height: 180px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    background: #e8e8e8;
+  }
+  .poster-placeholder {
+    width: 120px;
+    height: 180px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #e0e0e0, #c0c0c0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #999;
+  }
+
+  .result-info { flex: 1; }
+  .result-info h2 {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .genre-tag {
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #fff;
+  }
+  .genre-tag.drama    { background: #e85d75; }
+  .genre-tag.crime    { background: #6c5ce7; }
+  .genre-tag.history  { background: #a29bfe; }
+  .genre-tag.comedy   { background: #fdcb6e; color: #333; }
+  .genre-tag.war      { background: #636e72; }
+  .genre-tag.romance  { background: #fd79a8; }
+  .genre-tag.disaster { background: #e17055; }
+  .genre-tag.scifi    { background: #00b894; }
+  .genre-tag.adventure{ background: #00cec9; }
+  .genre-tag.anime    { background: #6c5ce7; }
+  .genre-tag.fantasy  { background: #a29bfe; }
+  .genre-tag.suspense { background: #2d3436; }
+  .genre-tag.action   { background: #d63031; }
+  .genre-tag.horror   { background: #2d3436; }
+  .genre-tag.thriller { background: #636e72; }
+
+  .douban-rating {
+    font-size: 14px;
+    color: #e17055;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .summary {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+    margin-top: 8px;
+  }
+
+  .no-info {
+    color: #aaa;
+    font-style: italic;
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  .review-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #f0f0f0;
+  }
+  .review-section h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #555;
+  }
+
+  .star-rating {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-size: 24px;
+    user-select: none;
+  }
+  .star-rating .star { color: #ddd; transition: color 0.1s; }
+  .star-rating .star.active { color: #f9ca24; }
+  .star-rating:hover .star { color: #f9ca24; }
+  .star-rating .star:hover ~ .star { color: #ddd; }
+
+  .review-textarea {
+    width: 100%;
+    min-height: 70px;
+    border: 2px solid #e8e8e8;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.2s;
+  }
+  .review-textarea:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+
+  .btn-save {
+    margin-top: 10px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    background: #667eea;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-save:hover { background: #5a6fd6; }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .history-section h2 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .history-empty {
+    text-align: center;
+    color: #bbb;
+    padding: 30px 0;
+    font-size: 15px;
+  }
+
+  .history-item {
+    padding: 14px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .history-item:last-child { border-bottom: none; }
+
+  .history-item .hi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .history-item .hi-name {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .history-item .hi-stars {
+    color: #f9ca24;
+    font-size: 13px;
+  }
+  .history-item .hi-review {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+    margin: 4px 0;
+  }
+  .history-item .hi-date {
+    font-size: 12px;
+    color: #bbb;
+  }
+  .history-item .hi-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .hi-actions button {
+    background: none;
+    border: none;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 0;
+  }
+  .hi-actions .btn-edit { color: #667eea; }
+  .hi-actions .btn-delete { color: #e85d75; }
+  .hi-actions button:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>🎬 电影随机选择器</h1>
+  </div>
+
+  <div class="card input-section">
+    <textarea id="movieInput" placeholder="一行输入一部你想看的电影..."></textarea>
+    <button class="btn-random" onclick="pickRandom()">🎲 随机选一个</button>
+  </div>
+
+  <div class="card result-card" id="resultCard">
+    <div id="resultContent"></div>
+  </div>
+
+  <div class="card history-section">
+    <h2>📝 我的观影历史</h2>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== 预置电影库（15 部高分电影）=====
+var POSTER_BASE = 'https://image.tmdb.org/t/p/w500';
+
+var movieDB = {
+  '肖申克的救赎': {
+    genres: ['剧情','犯罪'],
+    doubanRating: '9.7',
+    summary: '银行家安迪被冤入狱，用二十年凿开一堵墙，救赎了自己也唤醒了肖申克监狱里每一个人的希望。',
+    poster: POSTER_BASE + '/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg'
+  },
+  '霸王别姬': {
+    genres: ['剧情','历史'],
+    doubanRating: '9.6',
+    summary: '两个京剧伶人跨越半个世纪的悲欢离合，时代洪流下的爱恨纠葛，不疯魔不成活。',
+    poster: POSTER_BASE + '/f54hNIiHNINw3JiUJB2XaQl5wCN.jpg'
+  },
+  '阿甘正传': {
+    genres: ['剧情','喜剧'],
+    doubanRating: '9.5',
+    summary: '智商只有75的阿甘，凭着奔跑和善良跑过了越战、乒乓外交，跑出了传奇的一生。',
+    poster: POSTER_BASE + '/Cw4hIUIAmSYfK9QfaUW5igp9La.jpg'
+  },
+  '美丽人生': {
+    genres: ['喜剧','战争'],
+    doubanRating: '9.5',
+    summary: '父亲在集中营用游戏和谎言保护儿子的童心，用最残酷的底色画出最温暖的父爱。',
+    poster: POSTER_BASE + '/74hLDKjD5aGYOotO6esUVaeISa2.jpg'
+  },
+  '泰坦尼克号': {
+    genres: ['爱情','灾难'],
+    doubanRating: '9.5',
+    summary: '穷画家和贵族少女在泰坦尼克号上相遇相爱，巨轮沉没，爱情却成为永恒。',
+    poster: POSTER_BASE + '/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg'
+  },
+  '星际穿越': {
+    genres: ['科幻','冒险'],
+    doubanRating: '9.4',
+    summary: '一组宇航员穿越虫洞，为濒死的人类寻找新家园。时间和引力可以弯曲，唯有父女之爱穿越一切维度。',
+    poster: POSTER_BASE + '/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg'
+  },
+  '千与千寻': {
+    genres: ['动画','奇幻'],
+    doubanRating: '9.4',
+    summary: '女孩千寻误入神灵世界，为救父母在汤屋打工。宫崎骏创造一个奇幻又温暖的神隐之旅。',
+    poster: POSTER_BASE + '/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg'
+  },
+  '盗梦空间': {
+    genres: ['科幻','悬疑'],
+    doubanRating: '9.4',
+    summary: '潜入他人梦境窃取秘密，层层嵌套的梦中梦。一只陀螺旋转不停，现实与梦境究竟谁真谁假？',
+    poster: POSTER_BASE + '/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg'
+  },
+  '这个杀手不太冷': {
+    genres: ['动作','剧情'],
+    doubanRating: '9.4',
+    summary: '孤独的职业杀手和失去家人的小女孩相依为命。冷酷外表下藏着一颗最温柔的心。',
+    poster: POSTER_BASE + '/bxB2q91nKYp8JNzqE7t7TWBVupB.jpg'
+  },
+  '辛德勒的名单': {
+    genres: ['历史','战争'],
+    doubanRating: '9.5',
+    summary: '德国商人辛德勒倾尽家财，从纳粹魔爪下救出1100名犹太人的生命。拯救一人，即拯救全世界。',
+    poster: POSTER_BASE + '/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg'
+  },
+  '楚门的世界': {
+    genres: ['剧情','喜剧'],
+    doubanRating: '9.3',
+    summary: '从出生起就活在真人秀中的男人，终于发现头顶的蓝天是一面巨大的幕布。他选择走出去。',
+    poster: POSTER_BASE + '/vuza0WqY239yBXOadKlGwJsZJFE.jpg'
+  },
+  '三傻大闹宝莱坞': {
+    genres: ['喜剧','剧情'],
+    doubanRating: '9.2',
+    summary: '三个工科大学生的校园故事，用笑声讽刺应试教育，追问什么是真正的学习和成功。',
+    poster: POSTER_BASE + '/66A9MqXOyVFCssoloscw79z8Tew.jpg'
+  },
+  '机器人总动员': {
+    genres: ['动画','科幻'],
+    doubanRating: '9.3',
+    summary: '被遗弃在地球的小机器人瓦力，默默清扫垃圾700年，直到遇见来寻找生命迹象的伊芙。',
+    poster: POSTER_BASE + '/hbhFnRzzg6ZDmm8YAmxBnQpQIPh.jpg'
+  },
+  '大话西游之大圣娶亲': {
+    genres: ['喜剧','奇幻'],
+    doubanRating: '9.2',
+    summary: '至尊宝戴上金箍变成孙悟空的那一天，终于懂了什么是爱。我的意中人是个盖世英雄。',
+    poster: POSTER_BASE + '/ksloRonL1kOq4yErf9LOJ5qDhem.jpg'
+  },
+  '沉默的羔羊': {
+    genres: ['恐怖','惊悚'],
+    doubanRating: '9.0',
+    summary: '年轻FBI探员为追查连环杀手求助食人魔汉尼拔。一场心理博弈，恐惧与智慧的交锋。',
+    poster: POSTER_BASE + '/uS9m8OBk1A8eM9I042bx8XXpqAq.jpg'
+  }
+};
+
+// 类型 → CSS 类名映射
+var genreClassMap = {
+  '剧情': 'drama', '犯罪': 'crime', '历史': 'history', '喜剧': 'comedy',
+  '战争': 'war', '爱情': 'romance', '灾难': 'disaster', '科幻': 'scifi',
+  '冒险': 'adventure', '动画': 'anime', '奇幻': 'fantasy', '悬疑': 'suspense',
+  '动作': 'action', '恐怖': 'horror', '惊悚': 'thriller'
+};
+
+// ===== 状态 =====
+var currentMovie = null;
+var editingIndex = null;
+
+// ===== Toast 提示 =====
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2000);
+}
+
+// ===== localStorage 操作 =====
+function loadReviews() {
+  try {
+    return JSON.parse(localStorage.getItem('movie_reviews') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveReviews(reviews) {
+  localStorage.setItem('movie_reviews', JSON.stringify(reviews));
+}
+
+// ===== 随机选取 =====
+function pickRandom() {
+  var raw = document.getElementById('movieInput').value.trim();
+  if (!raw) {
+    showToast('请先在输入框中输入电影名~');
+    return;
+  }
+
+  // 按换行、中文逗号、英文逗号分割
+  var movies = raw.split(/[\n,，]+/).map(function(s) { return s.trim(); }).filter(Boolean);
+  if (movies.length === 0) {
+    showToast('请先在输入框中输入电影名~');
+    return;
+  }
+
+  var idx = Math.floor(Math.random() * movies.length);
+  var picked = movies[idx];
+  currentMovie = picked;
+  editingIndex = null;
+
+  renderResult(picked);
+}
+
+// ===== 渲染结果卡片 =====
+function renderResult(movieName) {
+  var card = document.getElementById('resultCard');
+  var content = document.getElementById('resultContent');
+  var movie = movieDB[movieName];
+
+  var html = '';
+
+  if (movie) {
+    // 类型标签
+    var tags = movie.genres.map(function(g) {
+      var cls = genreClassMap[g] || '';
+      return '<span class="genre-tag ' + cls + '">' + g + '</span>';
+    }).join('');
+
+    html += '<div class="result-header">';
+    html += '  <img class="poster" src="' + movie.poster + '" alt="' + movieName + '"';
+    html += '    onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+    html += '  <div class="poster-placeholder" style="display:none">🎬</div>';
+    html += '  <div class="result-info">';
+    html += '    <h2>🎬 ' + movieName + '</h2>';
+    html += '    <div class="genres">' + tags + '</div>';
+    html += '    <div class="douban-rating">⭐ 豆瓣评分 ' + movie.doubanRating + '</div>';
+    html += '    <div class="summary">📖 ' + movie.summary + '</div>';
+    html += '  </div>';
+    html += '</div>';
+  } else {
+    // 不在预置库中
+    html += '<div class="result-header">';
+    html += '  <div class="poster-placeholder">🎬</div>';
+    html += '  <div class="result-info">';
+    html += '    <h2>🎬 ' + movieName + '</h2>';
+    html += '    <p class="no-info">暂无详细信息，试试输入预置库中的电影名吧~</p>';
+    html += '  </div>';
+    html += '</div>';
+  }
+
+  // 影评区域（始终显示）
+  html += '<div class="review-section">';
+  html += '  <h3>我的评价</h3>';
+  html += '  <div class="star-rating" id="starRating">';
+  for (var i = 1; i <= 5; i++) {
+    html += '<span class="star" data-star="' + i + '">★</span>';
+  }
+  html += '  </div>';
+  html += '  <textarea class="review-textarea" id="reviewText" placeholder="写点影评..."></textarea>';
+  html += '  <button class="btn-save" onclick="saveReview()">💾 保存影评</button>';
+  html += '</div>';
+
+  content.innerHTML = html;
+  card.classList.add('visible');
+
+  // 绑定星级点击事件
+  var stars = document.querySelectorAll('#starRating .star');
+  stars.forEach(function(star) {
+    star.addEventListener('click', function() {
+      var val = parseInt(this.getAttribute('data-star'));
+      setStars(val);
+    });
+  });
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function setStars(val) {
+  var stars = document.querySelectorAll('#starRating .star');
+  stars.forEach(function(s) {
+    var sv = parseInt(s.getAttribute('data-star'));
+    if (sv <= val) {
+      s.classList.add('active');
+    } else {
+      s.classList.remove('active');
+    }
+  });
+}
+
+function getCurrentRating() {
+  var stars = document.querySelectorAll('#starRating .star');
+  var r = 0;
+  stars.forEach(function(s) {
+    if (s.classList.contains('active')) r = Math.max(r, parseInt(s.getAttribute('data-star')));
+  });
+  return r;
+}
+
+// ===== 保存影评 =====
+function saveReview() {
+  if (!currentMovie) return;
+
+  var rating = getCurrentRating();
+  var reviewText = document.getElementById('reviewText').value.trim();
+
+  if (rating === 0 && !reviewText) {
+    showToast('请先打分或写点影评~');
+    return;
+  }
+
+  var reviews = loadReviews();
+  var now = new Date();
+  var dateStr = now.getFullYear() + '-' +
+    String(now.getMonth() + 1).padStart(2, '0') + '-' +
+    String(now.getDate()).padStart(2, '0');
+
+  var entry = {
+    movieName: currentMovie,
+    rating: rating,
+    review: reviewText,
+    date: dateStr
+  };
+
+  if (editingIndex !== null) {
+    reviews[editingIndex] = entry;
+    editingIndex = null;
+  } else {
+    reviews.unshift(entry);
+  }
+
+  saveReviews(reviews);
+  renderHistory();
+  showToast('影评已保存 ✅');
+
+  // 清空评分和影评
+  setStars(0);
+  document.getElementById('reviewText').value = '';
+}
+
+// ===== 渲染观影历史 =====
+function renderHistory() {
+  var container = document.getElementById('historyList');
+  var reviews = loadReviews();
+
+  if (reviews.length === 0) {
+    container.innerHTML = '<div class="history-empty">🎬 还没有影评记录，去随机选一部电影开始吧~</div>';
+    return;
+  }
+
+  var html = '';
+  reviews.forEach(function(entry, index) {
+    var starsHtml = '';
+    for (var i = 1; i <= 5; i++) {
+      starsHtml += i <= entry.rating ? '★' : '☆';
+    }
+
+    html += '<div class="history-item">';
+    html += '  <div class="hi-header">';
+    html += '    <span class="hi-name">🎬 ' + entry.movieName + '</span>';
+    html += '    <span class="hi-stars">' + starsHtml + '</span>';
+    html += '  </div>';
+    if (entry.review) {
+      html += '  <div class="hi-review">' + entry.review + '</div>';
+    }
+    html += '  <div class="hi-date">' + entry.date + '</div>';
+    html += '  <div class="hi-actions">';
+    html += '    <button class="btn-edit" onclick="editReview(' + index + ')">✏️ 编辑</button>';
+    html += '    <button class="btn-delete" onclick="deleteReview(' + index + ')">🗑️ 删除</button>';
+    html += '  </div>';
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// ===== 编辑影评 =====
+function editReview(index) {
+  var reviews = loadReviews();
+  var entry = reviews[index];
+  if (!entry) return;
+
+  currentMovie = entry.movieName;
+  editingIndex = index;
+
+  renderResult(entry.movieName);
+
+  // 回填已有评分和影评
+  setTimeout(function() {
+    setStars(entry.rating);
+    document.getElementById('reviewText').value = entry.review;
+  }, 50);
+}
+
+// ===== 删除影评 =====
+function deleteReview(index) {
+  if (!confirm('确定删除这条影评吗？')) return;
+
+  var reviews = loadReviews();
+  reviews.splice(index, 1);
+  saveReviews(reviews);
+  renderHistory();
+  showToast('影评已删除');
+}
+
+// ===== 初始化 =====
+renderHistory();
+</script>
+</body>
+</html>
