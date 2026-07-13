@@ -57,10 +57,27 @@
     color: #bbb;
   }
 
-  .btn-random {
-    display: block;
-    width: 100%;
+  .btn-row {
+    display: flex;
+    gap: 10px;
     margin-top: 14px;
+  }
+  .btn-search {
+    flex: 1;
+    padding: 14px;
+    font-size: 17px;
+    font-weight: 600;
+    color: #667eea;
+    background: #fff;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-search:hover { background: #f5f6ff; }
+
+  .btn-random {
+    flex: 1;
     padding: 14px;
     font-size: 17px;
     font-weight: 600;
@@ -303,8 +320,11 @@
   </div>
 
   <div class="card input-section">
-    <textarea id="movieInput" placeholder="一行输入一部你想看的电影..."></textarea>
-    <button class="btn-random" onclick="pickRandom()">🎲 随机选一个</button>
+    <textarea id="movieInput" placeholder="输入你想查找的电影名字..."></textarea>
+    <div class="btn-row">
+      <button class="btn-search" onclick="searchMovie()">🔍 确认</button>
+      <button class="btn-random" onclick="randomPick()">🎲 随机选一个</button>
+    </div>
   </div>
 
   <div class="card result-card" id="resultCard">
@@ -449,27 +469,66 @@ function saveReviews(reviews) {
   localStorage.setItem('movie_reviews', JSON.stringify(reviews));
 }
 
-// ===== 随机选取 =====
-function pickRandom() {
-  var raw = document.getElementById('movieInput').value.trim();
-  if (!raw) {
-    showToast('请先在输入框中输入电影名~');
+// ===== 搜索电影 =====
+function searchMovie() {
+  var name = document.getElementById('movieInput').value.trim();
+  if (!name) {
+    showToast('请先输入电影名字~');
     return;
   }
 
-  // 按换行、中文逗号、英文逗号分割
-  var movies = raw.split(/[\n,，]+/).map(function(s) { return s.trim(); }).filter(Boolean);
-  if (movies.length === 0) {
-    showToast('请先在输入框中输入电影名~');
-    return;
-  }
+  if (movieDB[name]) {
+    currentMovie = name;
+    editingIndex = null;
+    renderResult(name);
+  } else {
+    // 模糊匹配：遍历查找包含关键词的电影
+    var keys = Object.keys(movieDB);
+    var found = null;
+    for (var i = 0; i < keys.length; i++) {
+      if (keys[i].indexOf(name) !== -1 || name.indexOf(keys[i]) !== -1) {
+        found = keys[i];
+        break;
+      }
+    }
 
-  var idx = Math.floor(Math.random() * movies.length);
-  var picked = movies[idx];
+    if (found) {
+      currentMovie = found;
+      editingIndex = null;
+      renderResult(found);
+      showToast('已为你找到：' + found);
+    } else {
+      showResultNotFound(name);
+    }
+  }
+}
+
+// ===== 从预置库随机选 =====
+function randomPick() {
+  var keys = Object.keys(movieDB);
+  var idx = Math.floor(Math.random() * keys.length);
+  var picked = keys[idx];
   currentMovie = picked;
   editingIndex = null;
-
   renderResult(picked);
+}
+
+// ===== 未找到影片 =====
+function showResultNotFound(movieName) {
+  var card = document.getElementById('resultCard');
+  var content = document.getElementById('resultContent');
+
+  var html = '<div class="result-header">';
+  html += '  <div class="poster-placeholder">🔍</div>';
+  html += '  <div class="result-info">';
+  html += '    <h2>🎬 ' + movieName + '</h2>';
+  html += '    <p class="no-info">暂未找到相关影片</p>';
+  html += '  </div>';
+  html += '</div>';
+
+  content.innerHTML = html;
+  card.classList.add('visible');
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // ===== 渲染结果卡片 =====
