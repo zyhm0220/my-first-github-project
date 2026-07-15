@@ -85,3 +85,18 @@ test('次要文字和未激活星级使用达到对比度要求的颜色', () =>
   assert.match(css, /\.star-rating button\s*{[^}]*color:\s*var\(--star-inactive\)/s);
   assert.match(css, /\.clear-rating:disabled\s*{[^}]*opacity:\s*1/s);
 });
+
+test('爆米花中心独立于旋转层且轮盘只保留扇形海报', () => {
+  const html = fs.readFileSync(htmlPath, 'utf8');
+  const css = fs.readFileSync(cssPath, 'utf8');
+
+  assert.match(
+    html,
+    /<div class="wheel" id="wheel"[^>]*>\s*<div class="wheel-labels" id="wheelLabels"><\/div>\s*<\/div>\s*<div class="wheel-center"/
+  );
+  assert.doesNotMatch(css, /\.wheel-label span/);
+  assert.match(css, /\.wheel-label\s*{[^}]*inset:\s*0/s);
+  assert.match(css, /\.wheel-label\s*{[^}]*overflow:\s*hidden/s);
+  assert.match(css, /\.wheel-label img\s*{[^}]*object-fit:\s*cover/s);
+  assert.match(css, /\.wheel-label\.is-winner::after/);
+});

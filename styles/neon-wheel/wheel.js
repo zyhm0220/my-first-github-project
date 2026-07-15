@@ -23,8 +23,11 @@
     return ((value % divisor) + divisor) % divisor;
   }
 
-  function computeTargetRotation(currentRotation, winnerIndex, segmentCount, turns) {
+  function computeTargetRotation(currentRotation, winnerIndex, segmentCount, turns, stopOffsetDegrees) {
     var segmentAngle;
+    var requestedOffset;
+    var maximumOffset;
+    var safeOffset;
     var currentNormalized;
     var targetNormalized;
     var delta;
@@ -38,8 +41,11 @@
     }
 
     segmentAngle = 360 / segmentCount;
+    requestedOffset = Number(stopOffsetDegrees) || 0;
+    maximumOffset = segmentAngle * 0.45;
+    safeOffset = Math.max(-maximumOffset, Math.min(maximumOffset, requestedOffset));
     currentNormalized = modulo(currentRotation, 360);
-    targetNormalized = modulo(-winnerIndex * segmentAngle, 360);
+    targetNormalized = modulo(-winnerIndex * segmentAngle + safeOffset, 360);
     delta = modulo(targetNormalized - currentNormalized, 360);
 
     return currentRotation + Math.max(0, Number(turns) || 0) * 360 + delta;
@@ -87,6 +93,92 @@
     }
 
     return editingIndex;
+  }
+
+  function validateSegmentIndex(index, segmentCount) {
+    if (!Number.isInteger(segmentCount) || segmentCount <= 0) {
+      throw new Error('segmentCount must be a positive integer');
+    }
+    if (!Number.isInteger(index) || index < 0 || index >= segmentCount) {
+      throw new Error('index must reference an existing segment');
+    }
+  }
+
+  function roundGeometry(value) {
+    return Number(value.toFixed(3));
+  }
+
+  function pointOnWheel(angleDegrees, radius) {
+    var radians = angleDegrees * Math.PI / 180;
+    return {
+      x: roundGeometry(50 + Math.cos(radians) * radius),
+      y: roundGeometry(50 + Math.sin(radians) * radius)
+    };
+  }
+
+  function buildSegmentClipPath(index, segmentCount, gapDegrees) {
+    var segmentAngle;
+    var centerAngle;
+    var gap;
+    var startAngle;
+    var endAngle;
+    var arcSteps;
+    var points;
+    var step;
+
+    validateSegmentIndex(index, segmentCount);
+    if (segmentCount === 1) return 'circle(50% at 50% 50%)';
+
+    segmentAngle = 360 / segmentCount;
+    centerAngle = -90 + index * segmentAngle;
+    gap = Math.min(Math.max(0, Number(gapDegrees) || 0.8), segmentAngle * 0.08);
+    startAngle = centerAngle - segmentAngle / 2 + gap;
+    endAngle = centerAngle + segmentAngle / 2 - gap;
+    arcSteps = Math.max(2, Math.ceil((endAngle - startAngle) / 15));
+    points = ['50% 50%'];
+
+    for (step = 0; step <= arcSteps; step += 1) {
+      var point = pointOnWheel(startAngle + (endAngle - startAngle) * step / arcSteps, 50);
+      points.push(point.x + '% ' + point.y + '%');
+    }
+
+    return 'polygon(' + points.join(', ') + ')';
+  }
+
+  function computePosterPlacement(index, segmentCount) {
+    var segmentAngle;
+    var centerAngle;
+    var radialDistance;
+    var size;
+    var center;
+
+    validateSegmentIndex(index, segmentCount);
+    if (segmentCount === 1) return { left: 0, top: 0, size: 100, rotation: 0 };
+
+    segmentAngle = 360 / segmentCount;
+    centerAngle = -90 + index * segmentAngle;
+    radialDistance = segmentCount === 2 ? 25 : segmentCount <= 4 ? 27 : 28;
+    size = segmentCount === 2 ? 120 : segmentCount <= 4 ? 104 : 88;
+    center = pointOnWheel(centerAngle, radialDistance);
+
+    return {
+      left: roundGeometry(center.x - size / 2),
+      top: roundGeometry(center.y - size / 2),
+      size: size,
+      rotation: roundGeometry(centerAngle + 90)
+    };
+  }
+
+  function computeStopOffset(segmentCount, random) {
+    var rng;
+    var raw;
+    var limit;
+
+    validateSegmentIndex(0, segmentCount);
+    rng = typeof random === 'function' ? random : Math.random;
+    raw = Math.max(0, Math.min(1, Number(rng()) || 0));
+    limit = Math.min(8, (360 / segmentCount) * 0.18);
+    return roundGeometry((raw * 2 - 1) * limit);
   }
 
   function buildWheelGradient(segmentCount) {
@@ -186,7 +278,6 @@
 
     function renderWheel() {
       var count = state.candidates.length;
-      var radius = count <= 2 ? 150 : count <= 4 ? 158 : 172;
 
       elements.wheelLabels.replaceChildren();
 
@@ -205,25 +296,26 @@
       );
 
       state.candidates.forEach(function renderCandidate(movie, index) {
-        var angle = index * (360 / count);
         var label = doc.createElement('div');
         var poster = doc.createElement('img');
-        var title = doc.createElement('span');
+        var placement = computePosterPlacement(index, count);
 
         label.className = 'wheel-label';
         label.dataset.movie = movie.name;
-        label.style.transform =
-          'translate(-50%, -50%) rotate(' + angle + 'deg) ' +
-          'translateY(-' + radius + 'px) rotate(' + (-angle) + 'deg)';
+        label.style.clipPath = buildSegmentClipPath(index, count, 0.8);
 
         poster.src = movie.poster;
         poster.alt = '';
+        poster.style.left = placement.left + '%';
+        poster.style.top = placement.top + '%';
+        poster.style.width = placement.size + '%';
+        poster.style.height = placement.size + '%';
+        poster.style.setProperty('--poster-angle', placement.rotation + 'deg');
         poster.addEventListener('error', function hideBrokenCandidatePoster() {
           poster.hidden = true;
         }, { once: true });
 
-        title.textContent = movie.name;
-        label.append(poster, title);
+        label.append(poster);
         elements.wheelLabels.append(label);
       });
 
@@ -323,6 +415,7 @@
       var reducedMotion;
       var duration;
       var turns;
+      var stopOffset;
       var targetRotation;
 
       if (state.spinning || !state.candidates.length) return;
@@ -335,11 +428,13 @@
       reducedMotion = runtime.matchMedia('(prefers-reduced-motion: reduce)').matches;
       duration = reducedMotion ? 120 : 4000;
       turns = reducedMotion ? 0 : 5 + Math.floor(Math.random() * 3);
+      stopOffset = computeStopOffset(state.candidates.length, Math.random);
       targetRotation = computeTargetRotation(
         state.currentRotation,
         winnerIndex,
         state.candidates.length,
-        turns
+        turns,
+        stopOffset
       );
 
       clearWinnerHighlight();
@@ -582,6 +677,9 @@
 
   return Object.freeze({
     computeTargetRotation: computeTargetRotation,
+    buildSegmentClipPath: buildSegmentClipPath,
+    computePosterPlacement: computePosterPlacement,
+    computeStopOffset: computeStopOffset,
     formatLocalDate: formatLocalDate,
     upsertReview: upsertReview,
     removeReview: removeReview,

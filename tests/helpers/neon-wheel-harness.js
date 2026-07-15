@@ -257,16 +257,18 @@ function createElement(doc, elements, id, tagName, parent) {
 function createDocument() {
   const doc = new FakeDocument();
   const elements = {};
-  const wheel = createElement(doc, elements, 'wheel', 'div');
+  const wheelStage = createElement(doc, elements, 'wheelStage', 'div');
+  const wheel = createElement(doc, elements, 'wheel', 'div', wheelStage);
   const genreFilters = createElement(doc, elements, 'genreFilters', 'div');
   const searchForm = createElement(doc, elements, 'searchForm', 'form');
   const resultSection = createElement(doc, elements, 'resultSection', 'section');
   const starRating = createElement(doc, elements, 'starRating', 'div');
 
   createElement(doc, elements, 'wheelLabels', 'div', wheel);
+  createElement(doc, elements, 'wheelCenter', 'div', wheelStage);
+  createElement(doc, elements, 'particles', 'div', wheelStage);
   createElement(doc, elements, 'spinButton', 'button');
   createElement(doc, elements, 'wheelStatus', 'p');
-  createElement(doc, elements, 'particles', 'div');
   createElement(doc, elements, 'searchInput', 'input', searchForm);
   elements.searchSubmit = doc.createElement('button');
   elements.searchSubmit.type = 'submit';
