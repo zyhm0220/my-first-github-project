@@ -201,7 +201,7 @@ Run:
 node --test tests/neon-wheel-logic.test.js tests/neon-wheel-structure.test.js tests/neon-wheel-integration.test.js
 ```
 
-Expected: `3` new tests fail because the geometry/jitter exports, stationary-center DOM, sector CSS, and poster-only rendering do not exist. Existing tests remain green.
+Expected: `4` new tests fail because the geometry/jitter exports, stationary-center DOM, sector CSS, and poster-only rendering do not exist. Existing tests remain green.
 
 - [ ] **Step 4: Add pure geometry and safe-offset helpers**
 
@@ -448,7 +448,7 @@ Run:
 node --test tests/neon-wheel-logic.test.js tests/neon-wheel-structure.test.js tests/neon-wheel-integration.test.js
 ```
 
-Expected: `25` focused tests, `25` pass, `0` fail. The repository-wide baseline becomes `36` tests.
+Expected: `26` focused tests, `26` pass, `0` fail. The repository-wide baseline becomes `37` tests.
 
 - [ ] **Step 9: Append the authoritative iteration note to the main plan**
 
@@ -457,7 +457,7 @@ Append to `docs/superpowers/plans/2026-07-15-neon-wheel-page.md`:
 ```markdown
 ### Task 6: 扇形海报与自然停靠迭代
 
-本任务由 `docs/superpowers/specs/2026-07-15-wheel-poster-sectors-design.md` 和 `docs/superpowers/plans/2026-07-15-wheel-poster-sectors.md` 定义，覆盖此前轮盘小卡片、片名和中心随动实现。最终页面使用海报填满动态扇区、爆米花中心独立于旋转层，并在 `±min(8°, segmentAngle × 18%)` 内自然停靠。最终自动化基线为 `36` tests，`36` pass，`0` fail。
+本任务由 `docs/superpowers/specs/2026-07-15-wheel-poster-sectors-design.md` 和 `docs/superpowers/plans/2026-07-15-wheel-poster-sectors.md` 定义，覆盖此前轮盘小卡片、片名和中心随动实现。最终页面使用海报填满动态扇区、爆米花中心独立于旋转层，并在 `±min(8°, segmentAngle × 18%)` 内自然停靠。最终自动化基线为 `37` tests，`37` pass，`0` fail。
 ```
 
 - [ ] **Step 10: Verify the real page at three desktop viewports**
@@ -495,7 +495,7 @@ git hash-object index.html
 
 Expected:
 
-- `36` tests, `36` pass, `0` fail.
+- `37` tests, `37` pass, `0` fail.
 - JavaScript syntax check and both diff checks pass.
 - Root `index.html` hash remains `9239b2389eb17401f12320a6a7b51d3809aa69d3`.
 
