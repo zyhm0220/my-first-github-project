@@ -257,23 +257,29 @@ test('历史记录把不可信内容作为纯文本渲染', () => {
   assert.equal(harness.elements.historyList.querySelector('script'), null);
 });
 
-test('初始化生成无片名的扇形海报并保留加载失败回退', () => {
+test('初始化生成铺满背景和完整前景海报并保留加载失败回退', () => {
   const harness = createNeonWheelHarness();
   const labels = harness.elements.wheelLabels.children;
 
   assert.equal(labels.length, 3);
   labels.forEach((label) => {
+    const poster = label.children[0];
+
     assert.match(label.style.clipPath, /^(polygon|circle)\(/);
+    assert.match(label.style.backgroundImage, /^url\(".+"\)$/);
     assert.equal(label.children.length, 1);
-    assert.equal(label.children[0].tagName, 'IMG');
+    assert.equal(poster.tagName, 'IMG');
     assert.equal(label.querySelector('span'), null);
-    assert.ok(label.children[0].style.width.endsWith('%'));
-    assert.ok(label.children[0].style.height.endsWith('%'));
+    assert.ok(poster.style.width.endsWith('%'));
+    assert.ok(poster.style.height.endsWith('%'));
+    assert.equal(Number.parseFloat(poster.style.height) / Number.parseFloat(poster.style.width), 1.5);
   });
 
-  const firstPoster = labels[0].children[0];
+  const firstLabel = labels[0];
+  const firstPoster = firstLabel.children[0];
   harness.error(firstPoster);
   assert.equal(firstPoster.hidden, true);
+  assert.equal(firstLabel.style.backgroundImage, '');
   assert.equal(harness.elements.wheelCenter.parentNode, harness.elements.wheelStage);
   assert.notEqual(harness.elements.wheelCenter.parentNode, harness.elements.wheel);
 });

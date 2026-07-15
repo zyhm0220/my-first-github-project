@@ -2548,3 +2548,7 @@ Expected: 本提交仅包含上述 4 个跟踪文件；`.superpowers/`、`.playw
 ### Task 6: 扇形海报与自然停靠迭代
 
 本任务由 `docs/superpowers/specs/2026-07-15-wheel-poster-sectors-design.md` 和 `docs/superpowers/plans/2026-07-15-wheel-poster-sectors.md` 定义，覆盖此前轮盘小卡片、片名和中心随动实现。最终页面使用海报填满动态扇区、爆米花中心独立于旋转层，并在 `±min(8°, segmentAngle × 18%)` 内自然停靠。最终自动化基线为 `37` tests，`37` pass，`0` fail。
+
+### Task 7: 完整海报辨识度迭代
+
+本任务由 `docs/superpowers/specs/2026-07-15-wheel-poster-recognition-design.md` 和 `docs/superpowers/plans/2026-07-15-wheel-poster-recognition.md` 定义。每个动态扇区使用同一海报作为压暗铺满背景，并在外半圈展示完整 2:3 前景海报；加载失败时同时清除背景图并隐藏前景图。旋转、自然停靠、固定爆米花中心和其他页面功能保持不变。最终自动化基线为 `38` tests，`38` pass，`0` fail。

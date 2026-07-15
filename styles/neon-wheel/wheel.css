@@ -329,36 +329,53 @@ button:disabled {
   z-index: 2;
   overflow: hidden;
   pointer-events: none;
+  background-color: rgba(17, 18, 38, 0.72);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-blend-mode: multiply;
 }
 
 .wheel-label img {
   position: absolute;
-  width: var(--poster-size);
-  height: var(--poster-size);
-  object-fit: cover;
+  z-index: 2;
+  display: block;
+  box-sizing: border-box;
+  object-fit: contain;
+  aspect-ratio: 2 / 3;
+  background: #080914;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 5px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.62);
   transform: rotate(var(--poster-angle));
   transform-origin: center;
-  filter: brightness(0.74) saturate(0.88);
-  transition: filter 180ms ease;
+  filter: brightness(0.98) saturate(1.02);
+  transition: filter 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .wheel-label::after {
   position: absolute;
   inset: 0;
+  z-index: 1;
   content: "";
-  background: rgba(6, 7, 17, 0.08);
-  box-shadow: inset 0 0 34px rgba(6, 7, 17, 0.48);
-  transition: 180ms ease;
+  background: rgba(6, 7, 17, 0.12);
+  box-shadow: inset 0 0 34px rgba(6, 7, 17, 0.52);
+  transition: background 180ms ease, box-shadow 180ms ease;
 }
 
 .wheel-label.is-winner img {
+  border-color: #f0abfc;
+  box-shadow:
+    0 0 0 2px rgba(240, 171, 252, 0.72),
+    0 0 20px rgba(244, 114, 182, 0.96),
+    0 6px 16px rgba(0, 0, 0, 0.66);
   filter: brightness(1.12) saturate(1.16);
 }
 
 .wheel-label.is-winner::after {
-  background: rgba(244, 114, 182, 0.08);
+  background: rgba(244, 114, 182, 0.06);
   box-shadow:
-    inset 0 0 34px rgba(244, 114, 182, 0.42),
+    inset 0 0 34px rgba(244, 114, 182, 0.32),
     inset 0 0 0 2px rgba(240, 171, 252, 0.8);
 }
 

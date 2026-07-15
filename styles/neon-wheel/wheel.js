@@ -149,22 +149,39 @@
     var segmentAngle;
     var centerAngle;
     var radialDistance;
-    var size;
+    var width;
+    var height;
     var center;
 
     validateSegmentIndex(index, segmentCount);
-    if (segmentCount === 1) return { left: 0, top: 0, size: 100, rotation: 0 };
+
+    if (segmentCount === 1) {
+      radialDistance = 31;
+      width = 24;
+      height = 36;
+    } else if (segmentCount === 2) {
+      radialDistance = 32;
+      width = 24;
+      height = 36;
+    } else if (segmentCount <= 4) {
+      radialDistance = 31;
+      width = 22;
+      height = 33;
+    } else {
+      radialDistance = 34;
+      width = 16;
+      height = 24;
+    }
 
     segmentAngle = 360 / segmentCount;
     centerAngle = -90 + index * segmentAngle;
-    radialDistance = segmentCount === 2 ? 25 : segmentCount <= 4 ? 27 : 28;
-    size = segmentCount === 2 ? 120 : segmentCount <= 4 ? 104 : 88;
     center = pointOnWheel(centerAngle, radialDistance);
 
     return {
-      left: roundGeometry(center.x - size / 2),
-      top: roundGeometry(center.y - size / 2),
-      size: size,
+      left: roundGeometry(center.x - width / 2),
+      top: roundGeometry(center.y - height / 2),
+      width: width,
+      height: height,
       rotation: roundGeometry(centerAngle + 90)
     };
   }
@@ -303,15 +320,17 @@
         label.className = 'wheel-label';
         label.dataset.movie = movie.name;
         label.style.clipPath = buildSegmentClipPath(index, count, 0.8);
+        label.style.backgroundImage = 'url("' + movie.poster + '")';
 
         poster.src = movie.poster;
         poster.alt = '';
         poster.style.left = placement.left + '%';
         poster.style.top = placement.top + '%';
-        poster.style.width = placement.size + '%';
-        poster.style.height = placement.size + '%';
+        poster.style.width = placement.width + '%';
+        poster.style.height = placement.height + '%';
         poster.style.setProperty('--poster-angle', placement.rotation + 'deg');
         poster.addEventListener('error', function hideBrokenCandidatePoster() {
+          label.style.backgroundImage = '';
           poster.hidden = true;
         }, { once: true });
 
