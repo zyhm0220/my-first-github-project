@@ -2057,6 +2057,7 @@ Create `styles/neon-wheel/wheel.js` with exactly:
       var movie;
 
       if (!entry) {
+        resetReviewEditor();
         showToast('这条记录已经不存在。');
         renderHistory();
         return;
