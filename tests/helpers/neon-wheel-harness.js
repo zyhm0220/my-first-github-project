@@ -1,5 +1,6 @@
 const Page = require('../../styles/neon-wheel/wheel.js');
 const Core = require('../../shared/movie-core.js');
+const ReviewStore = require('../../shared/review-store.js');
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -278,6 +279,7 @@ function createDocument() {
   createElement(doc, elements, 'movieRating', 'p', resultSection);
   createElement(doc, elements, 'movieSummary', 'p', resultSection);
   createElement(doc, elements, 'reviewText', 'textarea', resultSection);
+  createElement(doc, elements, 'clearRatingButton', 'button', resultSection);
   createElement(doc, elements, 'saveReviewButton', 'button', resultSection);
   createElement(doc, elements, 'historyList', 'div');
   createElement(doc, elements, 'toast', 'div');
@@ -339,6 +341,30 @@ function createStore(initialReviews, initialOutcomes) {
     },
     getReviews() {
       return clone(reviews);
+    }
+  };
+}
+
+function createBoundaryStore(initialReviews) {
+  let value = JSON.stringify(initialReviews);
+  const storage = {
+    getItem(key) {
+      return key === ReviewStore.REVIEW_KEY ? value : null;
+    },
+    setItem(key, nextValue) {
+      if (key === ReviewStore.REVIEW_KEY) value = nextValue;
+    }
+  };
+
+  return {
+    loadReviews() {
+      return ReviewStore.loadReviews(storage);
+    },
+    saveReviews(next) {
+      return ReviewStore.saveReviews(next, storage);
+    },
+    getReviews() {
+      return ReviewStore.loadReviews(storage);
     }
   };
 }
@@ -413,7 +439,9 @@ function findHistoryAction(historyList, index, action) {
 function createNeonWheelHarness(options) {
   const settings = options || {};
   const { doc, elements } = createDocument();
-  const store = createStore(settings.reviews, settings.saveOutcomes);
+  const store = Object.prototype.hasOwnProperty.call(settings, 'rawReviews')
+    ? createBoundaryStore(settings.rawReviews)
+    : createStore(settings.reviews, settings.saveOutcomes);
   const runtime = createRuntime(settings, store);
 
   Page.init(doc, runtime);

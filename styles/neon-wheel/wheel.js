@@ -140,6 +140,7 @@
       movieRating: doc.getElementById('movieRating'),
       movieSummary: doc.getElementById('movieSummary'),
       starRating: doc.getElementById('starRating'),
+      clearRatingButton: doc.getElementById('clearRatingButton'),
       reviewText: doc.getElementById('reviewText'),
       saveReviewButton: doc.getElementById('saveReviewButton'),
       historyList: doc.getElementById('historyList'),
@@ -163,6 +164,7 @@
         button.classList.toggle('is-active', rating <= value);
         button.setAttribute('aria-checked', String(rating === value));
       });
+      elements.clearRatingButton.disabled = value === 0;
     }
 
     function resetReviewEditor() {
@@ -419,6 +421,7 @@
         var edit = doc.createElement('button');
         var remove = doc.createElement('button');
         var rating = Math.max(0, Math.min(5, Number(entry.rating) || 0));
+        var reviewText = entry.review == null ? '' : String(entry.review);
 
         card.className = 'history-card';
         head.className = 'history-card__head';
@@ -428,7 +431,7 @@
         head.append(title, stars);
 
         review.className = 'history-review';
-        review.textContent = entry.review ? String(entry.review) : '只留下了星级评分。';
+        review.textContent = reviewText || '只留下了星级评分。';
         date.className = 'history-date';
         date.dateTime = String(entry.date || '');
         date.textContent = String(entry.date || '日期未知');
@@ -565,6 +568,9 @@
     elements.starRating.addEventListener('click', function handleRating(event) {
       var button = event.target.closest('[data-rating]');
       if (button) setRating(Number(button.dataset.rating));
+    });
+    elements.clearRatingButton.addEventListener('click', function clearRating() {
+      setRating(0);
     });
     elements.saveReviewButton.addEventListener('click', saveCurrentReview);
     elements.historyList.addEventListener('click', handleHistoryClick);

@@ -14,6 +14,63 @@ function withFixedRandom(run) {
   }
 }
 
+test('初始化通过真实存储边界忽略非记录项且安全渲染异常字段', () => {
+  const harness = createNeonWheelHarness({
+    rawReviews: [
+      null,
+      7,
+      '无效记录',
+      ['嵌套数组'],
+      { movieName: { nested: true }, rating: {}, review: [], date: {} },
+      makeReview('电影 A', '有效影评', 5)
+    ]
+  });
+
+  assert.equal(harness.elements.historyList.children.length, 2);
+  assert.equal(harness.elements.historyList.children[0].children[0].children[0].textContent, '[object Object]');
+  assert.equal(harness.elements.historyList.children[0].children[1].textContent, '只留下了星级评分。');
+  assert.equal(harness.elements.historyList.children[1].children[0].children[0].textContent, '电影 A');
+});
+
+test('选星后可清除为 0 星并仅保存影评', () => {
+  const harness = createNeonWheelHarness();
+
+  harness.elements.searchInput.value = '电影 A';
+  harness.submitSearch();
+  assert.equal(harness.elements.clearRatingButton.disabled, true);
+
+  harness.click(harness.elements.starButtons[3]);
+  assert.equal(harness.elements.clearRatingButton.disabled, false);
+
+  harness.click(harness.elements.clearRatingButton);
+  assert.equal(harness.elements.clearRatingButton.disabled, true);
+  harness.elements.starButtons.forEach((button) => {
+    assert.equal(button.getAttribute('aria-checked'), 'false');
+  });
+
+  harness.elements.reviewText.value = '只写影评';
+  harness.click(harness.elements.saveReviewButton);
+
+  assert.equal(harness.store.getReviews()[0].rating, 0);
+  assert.equal(harness.store.getReviews()[0].review, '只写影评');
+});
+
+test('编辑已评分记录时可清除为 0 星并持久化', () => {
+  const harness = createNeonWheelHarness({
+    reviews: [makeReview('电影 A', '保留文字', 4)]
+  });
+
+  harness.click(harness.getHistoryAction(0, 'edit'));
+  assert.equal(harness.elements.clearRatingButton.disabled, false);
+
+  harness.click(harness.elements.clearRatingButton);
+  assert.equal(harness.elements.clearRatingButton.disabled, true);
+  harness.click(harness.elements.saveReviewButton);
+
+  assert.equal(harness.store.getReviews()[0].rating, 0);
+  assert.equal(harness.store.getReviews()[0].review, '保留文字');
+});
+
 test('删除较早影评后保存仍更新原来的编辑目标', () => {
   const harness = createNeonWheelHarness({
     reviews: [

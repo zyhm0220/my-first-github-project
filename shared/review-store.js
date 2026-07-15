@@ -29,7 +29,9 @@
 
     try {
       parsed = JSON.parse(target.getItem(REVIEW_KEY) || '[]');
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed) ? parsed.filter(function keepReviewRecord(entry) {
+        return entry !== null && typeof entry === 'object' && !Array.isArray(entry);
+      }) : [];
     } catch (error) {
       return [];
     }

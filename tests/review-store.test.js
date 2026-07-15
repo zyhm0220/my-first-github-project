@@ -33,6 +33,21 @@ test('非法 JSON、非数组或读取异常均回退为空数组', () => {
   assert.deepEqual(Store.loadReviews({ getItem() { throw new Error('blocked'); } }), []);
 });
 
+test('读取时忽略非记录数组项并保留字段异常的对象记录', () => {
+  const valid = { movieName: '星际穿越', rating: 5, review: '很好', date: '2026-07-15' };
+  const malformedFields = { movieName: { nested: true }, rating: {}, review: [], date: {} };
+  const storage = createStorage(JSON.stringify([
+    null,
+    42,
+    '无效记录',
+    ['嵌套数组'],
+    valid,
+    malformedFields
+  ]));
+
+  assert.deepEqual(Store.loadReviews(storage), [valid, malformedFields]);
+});
+
 test('保存成功时沿用 movie_reviews 键和值格式', () => {
   const storage = createStorage();
   const reviews = [{ movieName: '千与千寻', rating: 4, review: '', date: '2026-07-15' }];

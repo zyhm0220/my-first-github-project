@@ -824,6 +824,7 @@ Create `styles/neon-wheel/index.html` with exactly:
             <button type="button" data-rating="4" role="radio" aria-checked="false" aria-label="4 星">★</button>
             <button type="button" data-rating="5" role="radio" aria-checked="false" aria-label="5 星">★</button>
           </div>
+          <button class="clear-rating" id="clearRatingButton" type="button" disabled>清除评分</button>
           <label class="sr-only" for="reviewText">写下观影感受</label>
           <textarea id="reviewText" rows="5" placeholder="写下你的观影感受…"></textarea>
           <button class="button button--primary button--full" id="saveReviewButton" type="button">保存影评</button>
@@ -2178,7 +2179,7 @@ Run:
 node --test
 ```
 
-Expected: `26` tests，`26` pass，`0` fail。
+Expected: `31` tests，`31` pass，`0` fail。
 
 - [ ] **Step 8: 通过静态服务器验证新页面资源可加载**
 
@@ -2265,7 +2266,7 @@ git hash-object index.html
 
 Expected:
 
-- `26` tests，`26` pass，`0` fail。
+- `31` tests，`31` pass，`0` fail。
 - `git diff --check` 无输出。
 - `git hash-object index.html` 输出 `9239b2389eb17401f12320a6a7b51d3809aa69d3`。
 
@@ -2345,7 +2346,7 @@ git status --short --untracked-files=no
 
 Expected:
 
-- `26` tests，`26` pass，`0` fail。
+- `31` tests，`31` pass，`0` fail。
 - `git diff --exit-code -- index.html` 无输出并返回成功。
 - `git diff --check` 无输出。
 - 已跟踪文件中只剩 README 尚未提交；本地 `.superpowers/` 草图目录不得被暂存。
@@ -2369,3 +2370,11 @@ Expected:
 - 当前分支为 `codex/style-neon-wheel`。
 - `.superpowers/` 仍是本地未跟踪设计草图，不在任何提交中。
 - 实施提交按顺序包含共享电影核心、影评存储、转盘页面和 README。
+
+### 最终审查修复补充
+
+- `MoviePickerReviewStore.loadReviews` 在数组边界忽略 `null`、原始值和嵌套数组，但保留所有非数组对象记录及原有 `{ movieName, rating, review, date }` 数据格式。
+- 星级 `radiogroup` 之外提供可聚焦的“清除评分”按钮：当前评分为 `0` 时禁用，选择 `1–5` 星后启用，点击后通过页面统一的 `setRating(0)` 状态路径恢复为 `0` 星。
+- 新建记录可在清除评分后仅保存影评；编辑已评分记录时也可清除为 `0` 星并持久化。
+- 占位符、历史日期和页脚统一使用 `--muted` 文字 token；未激活星级使用 `--star-inactive` token，在 `#111226` 卡片背景上分别满足至少 `4.5:1` 和 `3:1` 对比度。
+- 回归覆盖包括存储边界混合记录、真实 `Page.init` 异常字段渲染、新建/编辑评分清零持久化和颜色对比度；全量基线为 `31` tests，`31` pass，`0` fail。
