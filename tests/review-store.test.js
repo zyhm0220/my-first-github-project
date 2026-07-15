@@ -1,0 +1,47 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+
+const Store = require('../shared/review-store.js');
+
+function createStorage(initialValue) {
+  const values = new Map();
+  if (initialValue !== undefined) values.set(Store.REVIEW_KEY, initialValue);
+
+  return {
+    getItem(key) {
+      return values.has(key) ? values.get(key) : null;
+    },
+    setItem(key, value) {
+      values.set(key, value);
+    }
+  };
+}
+
+test('读取现有 movie_reviews 数组', () => {
+  const storage = createStorage(JSON.stringify([
+    { movieName: '星际穿越', rating: 5, review: '很好', date: '2026-07-15' }
+  ]));
+
+  assert.deepEqual(Store.loadReviews(storage), [
+    { movieName: '星际穿越', rating: 5, review: '很好', date: '2026-07-15' }
+  ]);
+});
+
+test('非法 JSON、非数组或读取异常均回退为空数组', () => {
+  assert.deepEqual(Store.loadReviews(createStorage('{bad json')), []);
+  assert.deepEqual(Store.loadReviews(createStorage(JSON.stringify({ value: 1 }))), []);
+  assert.deepEqual(Store.loadReviews({ getItem() { throw new Error('blocked'); } }), []);
+});
+
+test('保存成功时沿用 movie_reviews 键和值格式', () => {
+  const storage = createStorage();
+  const reviews = [{ movieName: '千与千寻', rating: 4, review: '', date: '2026-07-15' }];
+
+  assert.equal(Store.saveReviews(reviews, storage), true);
+  assert.deepEqual(Store.loadReviews(storage), reviews);
+});
+
+test('非数组输入和写入异常返回 false', () => {
+  assert.equal(Store.saveReviews({}, createStorage()), false);
+  assert.equal(Store.saveReviews([], { setItem() { throw new Error('quota'); } }), false);
+});
