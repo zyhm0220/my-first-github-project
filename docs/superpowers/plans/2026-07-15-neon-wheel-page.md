@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **当前执行说明（以 Task 5 为准）：** Task 1–4 中标注 `with exactly` / `Create ... with exactly` 的代码块是当时的历史 RED→GREEN 基线，用于记录实施过程，不再代表最终源码。若这些旧片段、旧测试数量或旧控制器行为与 **Task 5：最终加固** 冲突，必须以 Task 5 的完整可执行规格和最终测试基线为唯一当前依据。
+
 **Goal:** 新增一个独立的“影轮 CineSpin”桌面电影转盘页面，在不修改现有经典首页的前提下复用 15 部电影数据、搜索逻辑和影评存储。
 
 **Architecture:** 使用无构建流程的原生 HTML、CSS 和 JavaScript。`shared/` 提供可被未来老虎机页面复用的电影目录、筛选/抽取核心和 `localStorage` 兼容层；`styles/neon-wheel/` 只负责转盘页面结构、视觉、动画和 DOM 协调。共享逻辑使用普通浏览器脚本与受控全局命名空间，同时暴露 CommonJS 导出供 Node 内置测试运行器验证。
@@ -2371,10 +2373,174 @@ Expected:
 - `.superpowers/` 仍是本地未跟踪设计草图，不在任何提交中。
 - 实施提交按顺序包含共享电影核心、影评存储、转盘页面和 README。
 
-### 最终审查修复补充
+### Task 5: 最终加固（覆盖旧存储、CSS、控制器和测试片段）
 
-- `MoviePickerReviewStore.loadReviews` 在数组边界忽略 `null`、原始值和嵌套数组，但保留所有非数组对象记录及原有 `{ movieName, rating, review, date }` 数据格式。
-- 星级 `radiogroup` 之外提供可聚焦的“清除评分”按钮：当前评分为 `0` 时禁用，选择 `1–5` 星后启用，点击后通过页面统一的 `setRating(0)` 状态路径恢复为 `0` 星。
-- 新建记录可在清除评分后仅保存影评；编辑已评分记录时也可清除为 `0` 星并持久化。
-- 占位符、历史日期和页脚统一使用 `--muted` 文字 token；未激活星级使用 `--star-inactive` token，在 `#111226` 卡片背景上分别满足至少 `4.5:1` 和 `3:1` 对比度。
-- 回归覆盖包括存储边界混合记录、真实 `Page.init` 异常字段渲染、新建/编辑评分清零持久化和颜色对比度；全量基线为 `31` tests，`31` pass，`0` fail。
+Task 5 是当前 HEAD 的可执行源规格，完整取代 Task 2–4 中与以下文件有关的旧 `with exactly` 代码块和 `26` / `31` 项历史测试基线。
+
+**Exact files:**
+
+- Modify: `shared/review-store.js`
+- Modify: `styles/neon-wheel/index.html`
+- Modify: `styles/neon-wheel/wheel.css`
+- Modify: `styles/neon-wheel/wheel.js`
+- Modify: `tests/review-store.test.js`
+- Modify: `tests/neon-wheel-integration.test.js`
+- Modify: `tests/neon-wheel-structure.test.js`
+- Modify: `tests/helpers/neon-wheel-harness.js`
+- Modify: `docs/superpowers/plans/2026-07-15-neon-wheel-page.md`
+- Preserve unchanged: `index.html`
+
+**Final production contracts:**
+
+- `loadReviews(storage?)` 先丢弃数组中的 `null`、原始值和嵌套数组，再把每个保留对象规范为仅含 `{ movieName, rating, review, date }` 的新对象。
+- `movieName` / `review` / `date` 仅保留字符串，或安全字符串化有限数字和布尔原始值；绝不对对象、数组或 `null` 调用转换钩子。`movieName` 的缺失/不安全/空值回退为 `未知电影`，`review` 和 `date` 回退为空字符串。
+- `rating` 仅接受有限数值或非空有限数值字符串，四舍五入后限制为 `0–5` 整数；其他值均为 `0`。
+- `saveReviews` 继续使用 `movie_reviews` 键并保持原有写入 schema，不改动经典页面兼容性。
+- 星级区保留 `1–5` 的 `radiogroup`，并在组外提供独立“清除评分”按钮；评分 `0` 时禁用，评分 `1–5` 时启用，点击统一走 `setRating(0)`。
+- 占位符、历史日期和页脚使用 `--muted: #94a3b8`；未激活星级和禁用清除按钮使用 `--star-inactive: #7b7f9e`，禁用清除按钮不再降低 opacity。
+
+- [ ] **Step 1: 实现存储边界规范化**
+
+In `shared/review-store.js`, place these helpers after `resolveStorage` and map retained records through `normalizeReview`:
+
+```js
+function normalizeText(value, fallback) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'boolean') return String(value);
+  return fallback;
+}
+
+function normalizeRating(value) {
+  var numeric;
+
+  if (typeof value === 'number') {
+    numeric = value;
+  } else if (typeof value === 'string' && value.trim()) {
+    numeric = Number(value);
+  } else {
+    return 0;
+  }
+
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.max(0, Math.min(5, Math.round(numeric)));
+}
+
+function normalizeReview(entry) {
+  var movieName = normalizeText(entry.movieName, '');
+
+  return {
+    movieName: movieName || '未知电影',
+    rating: normalizeRating(entry.rating),
+    review: normalizeText(entry.review, ''),
+    date: normalizeText(entry.date, '')
+  };
+}
+
+parsed = JSON.parse(target.getItem(REVIEW_KEY) || '[]');
+return Array.isArray(parsed) ? parsed.filter(function keepReviewRecord(entry) {
+  return entry !== null && typeof entry === 'object' && !Array.isArray(entry);
+}).map(normalizeReview) : [];
+```
+
+- [ ] **Step 2: 实现可清零评分和最终对比度**
+
+The HTML immediately after `#starRating` must contain:
+
+```html
+<button class="clear-rating" id="clearRatingButton" type="button" disabled>清除评分</button>
+```
+
+The effective CSS rules must be:
+
+```css
+:root {
+  --muted: #94a3b8;
+  --star-inactive: #7b7f9e;
+}
+
+.search-form input::placeholder,
+.review-card textarea::placeholder,
+.history-date,
+.site-footer {
+  color: var(--muted);
+}
+
+.star-rating button,
+.clear-rating:disabled {
+  color: var(--star-inactive);
+}
+
+.clear-rating:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
+```
+
+The controller must include these effective snippets:
+
+```js
+clearRatingButton: doc.getElementById('clearRatingButton'),
+
+function setRating(value) {
+  state.rating = value;
+  starButtons.forEach(function updateStar(button) {
+    var rating = Number(button.dataset.rating);
+    button.classList.toggle('is-active', rating <= value);
+    button.setAttribute('aria-checked', String(rating === value));
+  });
+  elements.clearRatingButton.disabled = value === 0;
+}
+
+elements.clearRatingButton.addEventListener('click', function clearRating() {
+  setRating(0);
+});
+```
+
+- [ ] **Step 3: 建立最终回归门禁**
+
+Regression files and required coverage:
+
+- `tests/review-store.test.js`: 顶层非记录项过滤；四字段规范化；原始值文本转换；评分解析、四舍五入和 `0–5` 限制；正常经典记录语义不变；保存 schema 不变。
+- `tests/neon-wheel-integration.test.js`: 使用真实 `MoviePickerReviewStore` + `Page.init`，覆盖混合数组、异常字段以及 `movieName` / `rating` / `review` / `date` 都为 `{ toString: null, valueOf: null }` 时不抛错；覆盖新建和编辑评分清零后的真实持久化。
+- `tests/helpers/neon-wheel-harness.js`: `rawReviews` 路径必须通过真实 `ReviewStore.loadReviews(storage)` / `saveReviews(storage)`，不复制生产规范化逻辑。
+- `tests/neon-wheel-structure.test.js`: 清除按钮在 `radiogroup` 之外且初始禁用；对比度 token 达标并被指定 selector 使用；禁用清除按钮 `opacity: 1`。
+
+Run focused regressions:
+
+```powershell
+node --test tests/review-store.test.js tests/neon-wheel-integration.test.js tests/neon-wheel-structure.test.js
+```
+
+Expected: `22` tests，`22` pass，`0` fail。
+
+- [ ] **Step 4: 执行最终全量验证**
+
+```powershell
+node --test
+node --check shared/movie-data.js
+node --check shared/movie-core.js
+node --check shared/review-store.js
+node --check styles/neon-wheel/wheel.js
+git diff --check
+git diff --exit-code -- index.html
+git hash-object index.html
+```
+
+Expected:
+
+- `33` tests，`33` pass，`0` fail。
+- 4 个生产 JavaScript 文件语法检查通过。
+- `git diff --check` 无输出。
+- `git diff --exit-code -- index.html` 成功，且哈希仍为 `9239b2389eb17401f12320a6a7b51d3809aa69d3`。
+- 本次仅修改存储规范化、回归和计划文档；第一轮已完成的 1280×720 / 1440×900 浏览器证据继续有效，无需重复运行。
+
+- [ ] **Step 5: 提交第二轮规范化修复**
+
+```powershell
+git add -- shared/review-store.js tests/review-store.test.js tests/neon-wheel-integration.test.js docs/superpowers/plans/2026-07-15-neon-wheel-page.md
+git diff --cached --check
+git commit -m "fix: normalize persisted review fields"
+```
+
+Expected: 本提交仅包含上述 4 个跟踪文件；`.superpowers/`、`.playwright-cli/` 和 `output/` 不得被暂存。
