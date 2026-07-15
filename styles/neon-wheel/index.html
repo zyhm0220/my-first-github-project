@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="影轮 CineSpin——用霓虹电影转盘决定今晚看什么。">
+  <title>影轮 CineSpin｜今晚看什么？</title>
+  <link rel="stylesheet" href="./wheel.css">
+</head>
+<body>
+  <a class="skip-link" href="#wheelSection">跳到命运转盘</a>
+
+  <header class="site-header">
+    <a class="brand" href="#wheelSection" aria-label="影轮 CineSpin 首页">
+      <span class="brand__mark" aria-hidden="true">◉</span>
+      <span>影轮 <b>CineSpin</b></span>
+    </a>
+    <nav class="site-nav" aria-label="页面导航">
+      <a class="is-active" href="#wheelSection">命运转盘</a>
+      <a href="#searchSection">搜索电影</a>
+      <a href="#historySection">观影记录</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="wheelSection" aria-labelledby="heroTitle">
+      <div class="hero__copy">
+        <p class="eyebrow">YOUR MOVIE · YOUR MOMENT</p>
+        <h1 id="heroTitle">今晚看什么？<br><span>让命运替你决定</span></h1>
+        <p class="hero__description">从八部候选电影中转动光影轮盘，告别选择困难，邂逅今晚的故事。</p>
+        <button class="button button--primary" id="spinButton" type="button">
+          <span aria-hidden="true">✦</span> 转动命运转盘
+        </button>
+        <p class="wheel-status" id="wheelStatus" role="status">正在准备今晚的候选电影…</p>
+      </div>
+
+      <div class="wheel-panel" aria-label="电影候选转盘">
+        <div class="wheel-stage">
+          <div class="wheel-pointer" aria-hidden="true"></div>
+          <div class="wheel" id="wheel" role="img" aria-label="电影候选转盘">
+            <div class="wheel-labels" id="wheelLabels"></div>
+            <div class="wheel-center" aria-hidden="true">🍿</div>
+          </div>
+          <div class="particles" id="particles" aria-hidden="true"></div>
+        </div>
+
+        <div class="genre-filters" id="genreFilters" aria-label="按电影类型筛选">
+          <button class="genre-chip is-active" type="button" data-genre="全部" aria-pressed="true">全部</button>
+          <button class="genre-chip" type="button" data-genre="剧情" aria-pressed="false">剧情</button>
+          <button class="genre-chip" type="button" data-genre="喜剧" aria-pressed="false">喜剧</button>
+          <button class="genre-chip" type="button" data-genre="科幻" aria-pressed="false">科幻</button>
+          <button class="genre-chip" type="button" data-genre="动画" aria-pressed="false">动画</button>
+          <button class="genre-chip" type="button" data-genre="爱情" aria-pressed="false">爱情</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="search-section" id="searchSection" aria-labelledby="searchTitle">
+      <div>
+        <p class="section-kicker">ALREADY HAVE AN ANSWER?</p>
+        <h2 id="searchTitle">心里已经有答案？</h2>
+      </div>
+      <form class="search-form" id="searchForm" novalidate>
+        <label class="sr-only" for="searchInput">输入电影名称</label>
+        <input id="searchInput" name="movie" type="search" placeholder="输入电影名称进行搜索…" autocomplete="off">
+        <button class="button button--secondary" type="submit">搜索电影</button>
+      </form>
+      <p class="search-message" id="searchMessage" role="status"></p>
+    </section>
+
+    <section class="result-section" id="resultSection" aria-labelledby="resultTitle" hidden>
+      <div class="section-heading">
+        <p class="section-kicker">TONIGHT'S PICK</p>
+        <h2 id="resultTitle">命运为你选中了</h2>
+      </div>
+
+      <div class="result-grid">
+        <article class="movie-card">
+          <div class="poster-frame">
+            <img id="moviePoster" alt="" loading="lazy">
+            <div class="poster-fallback" id="posterFallback" hidden aria-hidden="true">🎬</div>
+          </div>
+          <div class="movie-copy">
+            <p class="movie-rating" id="movieRating"></p>
+            <h3 id="movieTitle"></h3>
+            <div class="movie-genres" id="movieGenres"></div>
+            <p class="movie-summary" id="movieSummary"></p>
+          </div>
+        </article>
+
+        <aside class="review-card" aria-labelledby="reviewTitle">
+          <p class="section-kicker">MY REVIEW</p>
+          <h3 id="reviewTitle">记录这次相遇</h3>
+          <div class="star-rating" id="starRating" role="radiogroup" aria-label="五星评分">
+            <button type="button" data-rating="1" role="radio" aria-checked="false" aria-label="1 星">★</button>
+            <button type="button" data-rating="2" role="radio" aria-checked="false" aria-label="2 星">★</button>
+            <button type="button" data-rating="3" role="radio" aria-checked="false" aria-label="3 星">★</button>
+            <button type="button" data-rating="4" role="radio" aria-checked="false" aria-label="4 星">★</button>
+            <button type="button" data-rating="5" role="radio" aria-checked="false" aria-label="5 星">★</button>
+          </div>
+          <label class="sr-only" for="reviewText">写下观影感受</label>
+          <textarea id="reviewText" rows="5" placeholder="写下你的观影感受…"></textarea>
+          <button class="button button--primary button--full" id="saveReviewButton" type="button">保存影评</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="history-section" id="historySection" aria-labelledby="historyTitle">
+      <div class="section-heading">
+        <p class="section-kicker">MY MOVIE JOURNAL</p>
+        <h2 id="historyTitle">我的观影历史</h2>
+      </div>
+      <div class="history-grid" id="historyList"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>影轮 CineSpin</span>
+    <span>让每一次选择，都成为一场电影。</span>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="sr-only" id="liveRegion" aria-live="polite"></div>
+
+  <script src="../../shared/movie-data.js"></script>
+  <script src="../../shared/movie-core.js"></script>
+  <script src="../../shared/review-store.js"></script>
+  <script src="./wheel.js"></script>
+</body>
+</html>
