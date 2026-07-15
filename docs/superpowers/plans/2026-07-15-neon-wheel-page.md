@@ -37,6 +37,8 @@
 - Create: `tests/review-store.test.js` — 存储容错和写入结果单元测试。
 - Create: `tests/neon-wheel-structure.test.js` — 页面结构、脚本顺序和视觉约束静态测试。
 - Create: `tests/neon-wheel-logic.test.js` — 转盘角度、日期和不可变影评列表操作单元测试。
+- Create: `tests/neon-wheel-integration.test.js` — 通过真实页面控制器验证抽取、搜索、海报回退和影评生命周期。
+- Create: `tests/helpers/neon-wheel-harness.js` — 无第三方依赖的最小 DOM、事件、存储和计时器测试接缝。
 - Modify: `README.md` — 增加新风格页面入口和目录说明。
 - Preserve unchanged: `index.html` — 经典页面不得发生任何变更。
 
@@ -575,6 +577,8 @@ Expected: 提交只包含上述 2 个文件。
 - Create: `styles/neon-wheel/wheel.js`
 - Create: `tests/neon-wheel-structure.test.js`
 - Create: `tests/neon-wheel-logic.test.js`
+- Create: `tests/neon-wheel-integration.test.js`
+- Create: `tests/helpers/neon-wheel-harness.js`
 
 **Interfaces:**
 - Consumes: `MoviePickerData.movies`、`MoviePickerCore` 的 4 个查询/抽取函数、`MoviePickerReviewStore` 的读取和保存函数。
@@ -582,6 +586,7 @@ Expected: 提交只包含上述 2 个文件。
 - Produces: `NeonWheelPage.formatLocalDate(date): string`。
 - Produces: `NeonWheelPage.upsertReview(reviews, entry, editingIndex): Review[]`。
 - Produces: `NeonWheelPage.removeReview(reviews, index): Review[]`。
+- Produces: `NeonWheelPage.adjustEditingIndexAfterDelete(editingIndex, deletedIndex): number | null`。
 - Produces: 可访问的 `styles/neon-wheel/` 页面，包含筛选、转盘、搜索、详情、评分、影评和历史完整流程。
 
 - [ ] **Step 1: 编写页面结构和脚本装配的失败测试**
@@ -694,6 +699,13 @@ test('删除影评返回新数组且无效索引不删除内容', () => {
   assert.deepEqual(Page.removeReview(original, 0), [{ movieName: 'B' }]);
   assert.deepEqual(Page.removeReview(original, 9), original);
   assert.notStrictEqual(Page.removeReview(original, 9), original);
+});
+
+test('删除影评后同步调整正在编辑的索引', () => {
+  assert.equal(Page.adjustEditingIndexAfterDelete(2, 0), 1);
+  assert.equal(Page.adjustEditingIndexAfterDelete(2, 2), null);
+  assert.equal(Page.adjustEditingIndexAfterDelete(1, 2), 1);
+  assert.equal(Page.adjustEditingIndexAfterDelete(null, 0), null);
 });
 ```
 
@@ -1655,6 +1667,13 @@ Create `styles/neon-wheel/wheel.js` with exactly:
     return next;
   }
 
+  function adjustEditingIndexAfterDelete(editingIndex, deletedIndex) {
+    if (!Number.isInteger(editingIndex)) return null;
+    if (editingIndex === deletedIndex) return null;
+    if (deletedIndex < editingIndex) return editingIndex - 1;
+    return editingIndex;
+  }
+
   function buildWheelGradient(segmentCount) {
     var colors = ['#2e1065', '#111c44', '#3b176f', '#13213f', '#27115c', '#151936', '#421b72', '#101d3b'];
     var segmentAngle = 360 / segmentCount;
@@ -2082,6 +2101,7 @@ Create `styles/neon-wheel/wheel.js` with exactly:
     function deleteReview(index) {
       var reviews;
       var next;
+      var nextEditingIndex;
 
       if (!runtime.confirm('确定删除这条影评吗？')) return;
 
@@ -2093,7 +2113,12 @@ Create `styles/neon-wheel/wheel.js` with exactly:
         return;
       }
 
-      if (state.editingIndex === index) resetReviewEditor();
+      nextEditingIndex = adjustEditingIndexAfterDelete(state.editingIndex, index);
+      if (Number.isInteger(state.editingIndex) && state.editingIndex >= 0 && nextEditingIndex === null) {
+        resetReviewEditor();
+      } else {
+        state.editingIndex = nextEditingIndex;
+      }
       renderHistory();
       showToast('影评已经删除。');
     }
@@ -2139,6 +2164,7 @@ Create `styles/neon-wheel/wheel.js` with exactly:
     formatLocalDate: formatLocalDate,
     upsertReview: upsertReview,
     removeReview: removeReview,
+    adjustEditingIndexAfterDelete: adjustEditingIndexAfterDelete,
     init: init
   });
 });
@@ -2152,7 +2178,7 @@ Run:
 node --test
 ```
 
-Expected: `17` tests，`17` pass，`0` fail。
+Expected: `26` tests，`26` pass，`0` fail。
 
 - [ ] **Step 8: 通过静态服务器验证新页面资源可加载**
 
@@ -2166,8 +2192,9 @@ Run in another terminal:
 
 ```powershell
 $response = Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8000/styles/neon-wheel/'
+$utf8Content = [Text.Encoding]::UTF8.GetString($response.RawContentStream.ToArray())
 $response.StatusCode
-$response.Content -match '<title>影轮 CineSpin'
+$utf8Content -match '<title>影轮 CineSpin'
 ```
 
 Expected: 输出 `200` 和 `True`。随后停止静态服务器。
@@ -2179,7 +2206,7 @@ Run:
 ```powershell
 git hash-object index.html
 git diff --check
-git add -- styles/neon-wheel tests/neon-wheel-structure.test.js tests/neon-wheel-logic.test.js
+git add -- styles/neon-wheel tests/neon-wheel-structure.test.js tests/neon-wheel-logic.test.js tests/neon-wheel-integration.test.js tests/helpers/neon-wheel-harness.js
 git diff --cached --check
 git commit -m "feat: add neon wheel movie picker"
 ```
@@ -2187,7 +2214,7 @@ git commit -m "feat: add neon wheel movie picker"
 Expected:
 
 - `git hash-object index.html` 输出 `9239b2389eb17401f12320a6a7b51d3809aa69d3`。
-- 提交只包含 `styles/neon-wheel/` 和两个转盘测试文件。
+- 提交只包含 `styles/neon-wheel/`、三个转盘测试文件和测试 harness。
 
 ### Task 4: 完成文档、桌面浏览器验收和最终回归检查
 
@@ -2238,7 +2265,7 @@ git hash-object index.html
 
 Expected:
 
-- `17` tests，`17` pass，`0` fail。
+- `26` tests，`26` pass，`0` fail。
 - `git diff --check` 无输出。
 - `git hash-object index.html` 输出 `9239b2389eb17401f12320a6a7b51d3809aa69d3`。
 
@@ -2255,9 +2282,10 @@ Run in another terminal:
 ```powershell
 $classic = Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8000/'
 $wheel = Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8000/styles/neon-wheel/'
+$wheelUtf8 = [Text.Encoding]::UTF8.GetString($wheel.RawContentStream.ToArray())
 $classic.StatusCode
 $wheel.StatusCode
-$wheel.Content -match '影轮 CineSpin'
+$wheelUtf8 -match '影轮 CineSpin'
 ```
 
 Expected: 依次输出 `200`、`200` 和 `True`。
@@ -2317,7 +2345,7 @@ git status --short --untracked-files=no
 
 Expected:
 
-- `17` tests，`17` pass，`0` fail。
+- `26` tests，`26` pass，`0` fail。
 - `git diff --exit-code -- index.html` 无输出并返回成功。
 - `git diff --check` 无输出。
 - 已跟踪文件中只剩 README 尚未提交；本地 `.superpowers/` 草图目录不得被暂存。
