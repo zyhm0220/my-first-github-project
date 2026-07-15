@@ -6,6 +6,11 @@
 
 [打开 GitHub Pages](https://zyhm0220.github.io/movie-picker/)
 
+## 页面风格
+
+- [经典电影随机选择器](./index.html)
+- [影轮 CineSpin 桌面转盘版](styles/neon-wheel/)
+
 ## 主要功能
 
 - 随机选择一部电影
@@ -29,10 +34,15 @@ python -m http.server 8000 --bind 127.0.0.1
 
 ```text
 movie-picker/
-├─ index.html          # 页面、样式、电影数据和交互逻辑
-├─ README.md           # 项目说明
-├─ .gitignore          # 本地工具临时文件忽略规则
-└─ 视觉风格素材/       # 设计探索参考图
+├─ index.html                    # 经典页面、样式、电影数据和交互逻辑
+├─ shared/                       # 新风格页面共享的电影和影评逻辑
+├─ styles/
+│  └─ neon-wheel/               # 影轮 CineSpin 桌面转盘页面
+├─ tests/                        # Node 内置测试运行器测试
+├─ docs/superpowers/            # 设计规格和实施计划
+├─ README.md                     # 项目说明
+├─ .gitignore                    # 本地工具临时文件忽略规则
+└─ 视觉风格素材/                 # 设计探索参考图
 ```
 
 ## 数据说明
