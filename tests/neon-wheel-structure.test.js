@@ -19,8 +19,8 @@ test('转盘页面包含全部语义区块和稳定 DOM 接口', () => {
   ];
 
   assert.match(html, /<html lang="zh-CN">/);
-  assert.match(html, /影轮 CineSpin/);
-  assert.match(html, /今晚看什么？/);
+  assert.match(html, /<span>影轮 <b>CineSpin<\/b><\/span>/);
+  assert.match(html, /<h1 id="heroTitle">今晚看什么？<br><span>让命运替你决定<\/span><\/h1>/);
   requiredIds.forEach((id) => assert.match(html, new RegExp(`id="${id}"`)));
 
   ['全部', '剧情', '喜剧', '科幻', '动画', '爱情'].forEach((genre) => {
